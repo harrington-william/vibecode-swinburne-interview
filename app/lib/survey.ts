@@ -245,6 +245,26 @@ export const SECTIONS: Section[] = [
 export const QUESTIONS: Question[] = SECTIONS.flatMap((s) => s.questions);
 export const TOTAL_QUESTIONS = QUESTIONS.length;
 
+/**
+ * Screening rule: students who already find the desks comfortable have nothing
+ * to report, so the survey ends right after this question.
+ */
+export const EARLY_EXIT = {
+  questionId: "q4",
+  answers: ["Comfortable", "Very comfortable"],
+};
+
+export function endsEarly(answers: Record<string, unknown>) {
+  const v = answers[EARLY_EXIT.questionId];
+  return typeof v === "string" && EARLY_EXIT.answers.includes(v);
+}
+
+/** The questions this respondent will actually be asked. */
+export function activeQuestions(answers: Record<string, unknown>): Question[] {
+  if (!endsEarly(answers)) return QUESTIONS;
+  return QUESTIONS.slice(0, QUESTIONS.findIndex((q) => q.id === EARLY_EXIT.questionId) + 1);
+}
+
 export const TEXT_MAX_LENGTH = 1000;
 export const OTHER_MAX_LENGTH = 200;
 
@@ -290,7 +310,9 @@ export function validateSubmission(
   };
 
   const answers: Answers = {};
-  for (const q of QUESTIONS) {
+  // After an early exit the remaining questions are skipped, so they are neither
+  // required nor stored.
+  for (const q of activeQuestions(source)) {
     const v = source[q.id];
     const empty = v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
     if (empty) {

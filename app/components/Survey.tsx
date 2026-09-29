@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
+  activeQuestions,
+  EARLY_EXIT,
+  endsEarly,
   isAnswered,
   isOtherSelected,
-  QUESTIONS,
   SECTIONS,
-  TOTAL_QUESTIONS,
   type Answers,
   type Section,
 } from "@/app/lib/survey";
@@ -58,9 +59,16 @@ export default function Survey() {
   }, [stage, step]);
 
   const section: Section = SECTIONS[step];
-  const isLast = step === SECTIONS.length - 1;
-  const answeredCount = QUESTIONS.filter((q) => isAnswered(q, answers[q.id], others[q.id])).length;
-  const progress = Math.round((answeredCount / TOTAL_QUESTIONS) * 100);
+  const early = endsEarly(answers);
+  const active = activeQuestions(answers);
+  const activeIds = new Set(active.map((q) => q.id));
+  const visibleQuestions = section.questions.filter((q) => activeIds.has(q.id));
+  // The last page is the final section, or the page holding the early-exit question.
+  const isLast =
+    step === SECTIONS.length - 1 ||
+    (early && section.questions.some((q) => q.id === EARLY_EXIT.questionId));
+  const answeredCount = active.filter((q) => isAnswered(q, answers[q.id], others[q.id])).length;
+  const progress = Math.round((answeredCount / active.length) * 100);
 
   function clearError(id: string) {
     setErrors((prev) => {
@@ -84,7 +92,7 @@ export default function Survey() {
   function validate(target: Section) {
     const found: Record<string, string> = {};
     for (const q of target.questions) {
-      if (!q.required || isAnswered(q, answers[q.id], others[q.id])) continue;
+      if (!activeIds.has(q.id) || !q.required || isAnswered(q, answers[q.id], others[q.id])) continue;
       const value = answers[q.id];
       const missingOtherText =
         isOtherSelected(q, value) && (Array.isArray(value) ? value.length > 0 : value !== "");
@@ -126,7 +134,7 @@ export default function Survey() {
 
   function buildPayload(): Answers {
     const payload: Answers = {};
-    for (const q of QUESTIONS) {
+    for (const q of active) {
       const value = answers[q.id];
       if (value === undefined) continue;
       const otherText = (others[q.id] ?? "").trim();
@@ -191,7 +199,7 @@ export default function Survey() {
           </div>
           {stage === "form" && (
             <span className="whitespace-nowrap text-sm font-semibold text-ink-soft" aria-live="polite">
-              {answeredCount}/{TOTAL_QUESTIONS}
+              {answeredCount}/{active.length}
               <span className="max-sm:sr-only"> answered</span>
             </span>
           )}
@@ -284,17 +292,28 @@ export default function Survey() {
               <p className="mt-2 text-ink-soft">{section.blurb}</p>
             </div>
 
-            {section.questions.map((q, i) => (
-              <QuestionCard
-                key={q.id}
-                q={q}
-                value={answers[q.id]}
-                other={others[q.id] ?? ""}
-                error={errors[q.id]}
-                delay={120 + i * 90}
-                onChange={(v) => setAnswer(q.id, v)}
-                onOtherChange={(t) => setOther(q.id, t)}
-              />
+            {visibleQuestions.map((q, i) => (
+              <Fragment key={q.id}>
+                <QuestionCard
+                  q={q}
+                  value={answers[q.id]}
+                  other={others[q.id] ?? ""}
+                  error={errors[q.id]}
+                  delay={120 + i * 90}
+                  onChange={(v) => setAnswer(q.id, v)}
+                  onOtherChange={(t) => setOther(q.id, t)}
+                />
+                {early && q.id === EARLY_EXIT.questionId && (
+                  <p
+                    role="status"
+                    className="anim-rise flex items-start gap-3 rounded-2xl border-[1.5px] border-leaf bg-leaf/10 px-4 py-3 text-sm font-semibold text-ink"
+                  >
+                    <span aria-hidden className="text-lg leading-none">🎉</span>
+                    Good news, your desk works for you! That&apos;s all we need, so the rest of the questions
+                    are skipped. Just submit to finish.
+                  </p>
+                )}
+              </Fragment>
             ))}
 
             {status === "error" && (
@@ -339,7 +358,9 @@ export default function Survey() {
                 Thank you!
               </h1>
               <p className="mt-3 max-w-md text-lg text-ink-soft">
-                Your answers are in. They&apos;ll help decide how our classroom desks and chairs get rearranged.
+                {early
+                  ? "Since your desk already feels comfortable, that's all we need. Your answers still help us see what works."
+                  : "Your answers are in. They'll help decide how our classroom desks and chairs get rearranged."}
               </p>
               <button type="button" className="btn btn-ghost mt-8" onClick={restart}>
                 Submit another response
