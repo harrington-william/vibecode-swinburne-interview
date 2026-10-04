@@ -39,7 +39,13 @@ export const SECTIONS: Section[] = [
         label: "What is your year of study?",
         required: true,
         layout: "grid",
-        options: ["First year", "Second year", "Third year", "Fourth year", "Other"],
+        options: [
+          "First year",
+          "Second year",
+          "Third year",
+          "Fourth year",
+          "Other",
+        ],
       },
       {
         id: "q2",
@@ -64,7 +70,12 @@ export const SECTIONS: Section[] = [
         label: "How long do you usually sit at a desk during one class?",
         required: true,
         layout: "grid",
-        options: ["Less than 30 minutes", "30–60 minutes", "1–2 hours", "More than 2 hours"],
+        options: [
+          "Less than 30 minutes",
+          "30–60 minutes",
+          "1–2 hours",
+          "More than 2 hours",
+        ],
       },
       {
         id: "q4",
@@ -73,13 +84,20 @@ export const SECTIONS: Section[] = [
         label: "How comfortable do you feel when using the current desks?",
         required: true,
         layout: "scale",
-        options: ["Very comfortable", "Comfortable", "Neutral", "Uncomfortable", "Very uncomfortable"],
+        options: [
+          "Very comfortable",
+          "Comfortable",
+          "Neutral",
+          "Uncomfortable",
+          "Very uncomfortable",
+        ],
       },
       {
         id: "q5",
         number: 5,
         type: "single",
-        label: "Do you find it difficult to maintain a comfortable sitting position during class?",
+        label:
+          "Do you find it difficult to maintain a comfortable sitting position during class?",
         required: true,
         layout: "scale",
         options: frequency5,
@@ -88,7 +106,8 @@ export const SECTIONS: Section[] = [
         id: "q6",
         number: 6,
         type: "single",
-        label: "Which part of your body feels uncomfortable after sitting for a long time?",
+        label:
+          "Which part of your body feels uncomfortable after sitting for a long time?",
         required: true,
         layout: "grid",
         options: [
@@ -135,7 +154,8 @@ export const SECTIONS: Section[] = [
         id: "q8",
         number: 8,
         type: "single",
-        label: "Do you often have to bend your neck or hunch your back when studying?",
+        label:
+          "Do you often have to bend your neck or hunch your back when studying?",
         required: true,
         layout: "scale",
         options: frequency5,
@@ -161,16 +181,24 @@ export const SECTIONS: Section[] = [
         id: "q10",
         number: 10,
         type: "single",
-        label: "Does discomfort from sitting affect your concentration in class?",
+        label:
+          "Does discomfort from sitting affect your concentration in class?",
         required: true,
         layout: "scale",
-        options: ["Not at all", "Slightly", "Moderately", "Significantly", "Very significantly"],
+        options: [
+          "Not at all",
+          "Slightly",
+          "Moderately",
+          "Significantly",
+          "Very significantly",
+        ],
       },
       {
         id: "q11",
         number: 11,
         type: "single",
-        label: "Have you ever changed your sitting position because you felt uncomfortable?",
+        label:
+          "Have you ever changed your sitting position because you felt uncomfortable?",
         required: true,
         layout: "scale",
         options: frequency5,
@@ -179,10 +207,17 @@ export const SECTIONS: Section[] = [
         id: "q12",
         number: 12,
         type: "single",
-        label: "How important do you think it is to improve the current classroom desks and seating?",
+        label:
+          "How important do you think it is to improve the current classroom desks and seating?",
         required: true,
         layout: "scale",
-        options: ["Not important", "Slightly important", "Moderately important", "Important", "Very important"],
+        options: [
+          "Not important",
+          "Slightly important",
+          "Moderately important",
+          "Important",
+          "Very important",
+        ],
       },
     ],
   },
@@ -233,7 +268,8 @@ export const SECTIONS: Section[] = [
         id: "q15",
         number: 15,
         type: "text",
-        label: "Do you have any other suggestions about the classroom desks or seating?",
+        label:
+          "Do you have any other suggestions about the classroom desks or seating?",
         hint: "Optional · short answer",
         required: false,
         placeholder: "Anything else on your mind…",
@@ -262,16 +298,24 @@ export function endsEarly(answers: Record<string, unknown>) {
 /** The questions this respondent will actually be asked. */
 export function activeQuestions(answers: Record<string, unknown>): Question[] {
   if (!endsEarly(answers)) return QUESTIONS;
-  return QUESTIONS.slice(0, QUESTIONS.findIndex((q) => q.id === EARLY_EXIT.questionId) + 1);
+  return QUESTIONS.slice(
+    0,
+    QUESTIONS.findIndex((q) => q.id === EARLY_EXIT.questionId) + 1,
+  );
 }
 
 export const TEXT_MAX_LENGTH = 1000;
 export const OTHER_MAX_LENGTH = 200;
 
 /** True when the "Other" option is currently selected for this question. */
-export function isOtherSelected(q: Question, value: string | string[] | undefined) {
+export function isOtherSelected(
+  q: Question,
+  value: string | string[] | undefined,
+) {
   if (!q.otherText || value === undefined) return false;
-  return Array.isArray(value) ? value.includes(q.otherText) : value === q.otherText;
+  return Array.isArray(value)
+    ? value.includes(q.otherText)
+    : value === q.otherText;
 }
 
 export function isAnswered(
@@ -280,7 +324,8 @@ export function isAnswered(
   otherValue: string | undefined,
 ) {
   if (value === undefined) return false;
-  if (q.type === "text") return typeof value === "string" && value.trim() !== "";
+  if (q.type === "text")
+    return typeof value === "string" && value.trim() !== "";
   const hasChoice = Array.isArray(value) ? value.length > 0 : value !== "";
   if (!hasChoice) return false;
   return !isOtherSelected(q, value) || (otherValue ?? "").trim() !== "";
@@ -306,7 +351,11 @@ export function validateSubmission(
     if (!q.otherText) return false;
     const prefix = `${q.otherText}: `;
     const rest = v.slice(prefix.length);
-    return v.startsWith(prefix) && rest.trim() !== "" && rest.length <= OTHER_MAX_LENGTH;
+    return (
+      v.startsWith(prefix) &&
+      rest.trim() !== "" &&
+      rest.length <= OTHER_MAX_LENGTH
+    );
   };
 
   const answers: Answers = {};
@@ -314,9 +363,11 @@ export function validateSubmission(
   // required nor stored.
   for (const q of activeQuestions(source)) {
     const v = source[q.id];
-    const empty = v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
+    const empty =
+      v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
     if (empty) {
-      if (q.required) return { ok: false, error: `Question ${q.number} is required` };
+      if (q.required)
+        return { ok: false, error: `Question ${q.number} is required` };
       continue;
     }
     if (q.type === "text") {
@@ -324,9 +375,11 @@ export function validateSubmission(
         return { ok: false, error: `Question ${q.number} is invalid` };
       }
       if (v.trim() !== "") answers[q.id] = v.trim();
-      else if (q.required) return { ok: false, error: `Question ${q.number} is required` };
+      else if (q.required)
+        return { ok: false, error: `Question ${q.number} is required` };
     } else if (q.type === "single") {
-      if (!isValidChoice(q, v)) return { ok: false, error: `Question ${q.number} is invalid` };
+      if (!isValidChoice(q, v))
+        return { ok: false, error: `Question ${q.number} is invalid` };
       answers[q.id] = v;
     } else {
       const limit = q.max ?? q.options?.length ?? 0;
